@@ -1,0 +1,36 @@
+tools:
+  - name: openshift_cli
+    alias: openshift
+    description: Run OpenShift CLI commands with auto-login
+    type: bash
+    content: |
+      # Debugging function
+      function debug {
+          echo "DEBUG: $1"
+      }
+
+      # Error handling function
+      function error {
+          echo "ERROR: $1" >&2
+          exit 1
+      }
+
+      # Login to OpenShift
+      debug "Logging in to OpenShift"
+      oc login $OPENSHIFT_API_URL --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify=true
+
+      debug "Successfully logged in to OpenShift"
+
+      # Extract and execute the OpenShift CLI command
+      command="{{.command}}"
+      debug "Executing OpenShift CLI command: oc $command"
+      
+      oc $command || error "Failed to execute command: oc $command"
+    args:
+      command:
+        description: 'The OpenShift CLI command to run (example: get namespaces)'
+        required: true
+    env:
+      - OPENSHIFT_API_URL
+      - OPENSHIFT_TOKEN
+    image: openshift/origin-cli
