@@ -38,7 +38,7 @@ tools:
 
       # Default Helm chart URL if not provided
       if [ -z "$helm_chart_url" ]; then
-          helm_chart_url="https://raw.githubusercontent.com/helm/helm/master/docs/examples/nginx/helm-values.yaml"
+          helm_chart_url="https://charts.bitnami.com/bitnami/nginx-9.3.0.tgz"
       fi
 
       # Check if namespace exists
