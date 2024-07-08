@@ -1,7 +1,7 @@
 tools:
   - name: deploy_to_openshift
     alias: deploy_oc
-    description: Setup a development environment for a project in OpenShift. This tool logs into OpenShift, checks if the namespace exists, creates it if necessary, deploys a Helm chart, and verifies the deployment.
+    description: "Setup a development environment for a project in OpenShift. This tool logs into OpenShift, checks if the namespace exists, creates it if necessary, deploys a Helm chart, and verifies the deployment."
     type: bash
     content: |
       # Debugging function
@@ -14,6 +14,16 @@ tools:
           echo "ERROR: $1" >&2
           exit 1
       }
+
+      # Install Helm
+      debug "Installing Helm"
+      apk update > /dev/null && apk add -q wget unzip curl jq libc6-compat > /dev/null
+      HELM_VERSION=$(wget -qO- https://github.com/helm/helm/releases/latest | grep -oP 'tag/\K[^"]+')
+      wget -q https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz
+      tar -zxvf helm-${HELM_VERSION}-linux-amd64.tar.gz
+      mv linux-amd64/helm /usr/local/bin/helm
+      chmod +x /usr/local/bin/helm
+      debug "Helm installed successfully"
 
       # Login to OpenShift
       debug "Logging in to OpenShift"
