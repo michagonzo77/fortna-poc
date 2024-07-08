@@ -17,7 +17,7 @@ tools:
 
       # Login to OpenShift
       debug "Logging in to OpenShift"
-      oc login $OPENSHIFT_API_URL --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify=true
+      oc login $OPENSHIFT_API_URL --username=$OPENSHIFT_USERNAME --password=$OPENSHIFT_PASSWORD --insecure-skip-tls-verify=true
 
       debug "Successfully logged in to OpenShift"
 
@@ -32,5 +32,6 @@ tools:
         required: true
     env:
       - OPENSHIFT_API_URL
-      - OPENSHIFT_TOKEN
+      - OPENSHIFT_USERNAME
+      - OPENSHIFT_PASSWORD
     image: openshift/origin-cli
