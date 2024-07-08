@@ -4,6 +4,8 @@ tools:
     description: "Setup a development environment for a project in OpenShift. This tool logs into OpenShift, checks if the namespace exists, creates it if necessary, deploys a Helm chart, and verifies the deployment."
     type: bash
     content: |
+      #!/bin/bash
+      
       # Debugging function
       function debug {
           echo "DEBUG: $1"
