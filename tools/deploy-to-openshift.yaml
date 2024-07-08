@@ -1,0 +1,74 @@
+tools:
+  - name: deploy_to_openshift
+    alias: deploy_oc
+    description: Login to OpenShift, create or use existing namespace, deploy Helm chart, and verify deployment
+    type: bash
+    content: |
+      # Debugging function
+      function debug {
+          echo "DEBUG: $1"
+      }
+
+      # Error handling function
+      function error {
+          echo "ERROR: $1" >&2
+          exit 1
+      }
+
+      # Login to OpenShift
+      debug "Logging in to OpenShift"
+      oc login $OPENSHIFT_API_URL --username=$OPENSHIFT_USERNAME --password=$OPENSHIFT_PASSWORD --insecure-skip-tls-verify=true || error "Failed to log in to OpenShift"
+
+      debug "Successfully logged in to OpenShift"
+
+      # Extract arguments
+      environment="{{.environment}}"
+      project="{{.project}}"
+      namespace="${project}-${environment}"
+      helm_chart_url="{{.helm_chart_url}}"
+
+      # Default Helm chart URL if not provided
+      if [ -z "$helm_chart_url" ]; then
+          helm_chart_url="https://raw.githubusercontent.com/helm/helm/master/docs/examples/nginx/helm-values.yaml"
+      fi
+
+      # Check if namespace exists
+      debug "Checking if namespace $namespace exists"
+      if oc get namespace $namespace > /dev/null 2>&1; then
+          debug "Namespace $namespace already exists"
+      else
+          debug "Namespace $namespace does not exist. Creating namespace."
+          oc create namespace $namespace || error "Failed to create namespace $namespace"
+      fi
+
+      # Switch to the namespace
+      debug "Switching to namespace $namespace"
+      oc project $namespace || error "Failed to switch to namespace $namespace"
+      debug "Namespace $namespace selected"
+
+      # Deploy the Helm chart
+      debug "Deploying Helm chart from $helm_chart_url to namespace $namespace"
+      helm install --generate-name -f $helm_chart_url -n $namespace || error "Failed to deploy Helm chart to namespace $namespace"
+
+      # Verify the deployment
+      debug "Verifying the deployment in namespace $namespace"
+      if oc get deploy -n $namespace > /dev/null 2>&1; then
+          debug "Deployment in namespace $namespace verified successfully"
+      else
+          error "Failed to verify deployment in namespace $namespace"
+      fi
+    args:
+      environment:
+        description: 'The environment to deploy to (example: dev, prod)'
+        required: true
+      project:
+        description: 'The project or team name (example: walmart)'
+        required: true
+      helm_chart_url:
+        description: 'The URL of the Helm chart to deploy'
+        required: false
+    env:
+      - OPENSHIFT_API_URL
+      - OPENSHIFT_USERNAME
+      - OPENSHIFT_PASSWORD
+    image: openshift/origin-cli
