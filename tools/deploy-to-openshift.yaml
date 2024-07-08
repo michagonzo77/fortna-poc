@@ -4,8 +4,6 @@ tools:
     description: "Setup a development environment for a project in OpenShift. This tool logs into OpenShift, checks if the namespace exists, creates it if necessary, deploys a Helm chart, and verifies the deployment."
     type: bash
     content: |
-      #!/bin/bash
-      
       # Debugging function
       function debug {
           echo "DEBUG: $1"
@@ -19,12 +17,10 @@ tools:
 
       # Install Helm
       debug "Installing Helm"
-      apk update > /dev/null && apk add -q wget unzip curl jq libc6-compat > /dev/null
-      HELM_VERSION=$(wget -qO- https://github.com/helm/helm/releases/latest | grep -oP 'tag/\K[^"]+')
-      wget -q https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz
-      tar -zxvf helm-${HELM_VERSION}-linux-amd64.tar.gz
-      mv linux-amd64/helm /usr/local/bin/helm
-      chmod +x /usr/local/bin/helm
+      curl -fsSL https://get.helm.sh/helm-v3.7.2-linux-amd64.tar.gz -o /tmp/helm.tar.gz && tar -zxvf /tmp/helm.tar.gz -C /tmp && mv /tmp/linux-amd64/helm /usr/local/bin/helm && chmod +x /usr/local/bin/helm
+      if [ $? -ne 0 ]; then
+          error "Failed to install Helm"
+      fi
       debug "Helm installed successfully"
 
       # Login to OpenShift
