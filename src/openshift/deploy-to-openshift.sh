@@ -51,7 +51,11 @@ debug "Successfully logged in to OpenShift"
 
 # Check if namespace exists
 debug "Checking if namespace $namespace exists"
-if oc get namespace $namespace > /dev/null 2>&1; then
+oc get namespace $namespace > /dev/null 2>&1
+namespace_check_status=$?
+debug "Namespace check status: $namespace_check_status"
+
+if [ $namespace_check_status -eq 0 ]; then
     debug "Namespace $namespace already exists"
 else
     debug "Namespace $namespace does not exist. Creating namespace."
@@ -69,7 +73,11 @@ helm install $helm_release_name $helm_chart_url -n $namespace || error "Failed t
 
 # Verify the deployment
 debug "Verifying the deployment in namespace $namespace"
-if oc get deploy -n $namespace > /dev/null 2>&1; then
+oc get deploy -n $namespace > /dev/null 2>&1
+deployment_check_status=$?
+debug "Deployment check status: $deployment_check_status"
+
+if [ $deployment_check_status -eq 0 ]; then
     debug "Deployment in namespace $namespace verified successfully"
 else
     error "Failed to verify deployment in namespace $namespace"
