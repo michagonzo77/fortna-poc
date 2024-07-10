@@ -4,28 +4,43 @@ tools:
     description: Run OpenShift CLI commands with auto-login
     type: bash
     content: |
-      # Debugging function
-      function debug {
-          echo "DEBUG: $1"
-      }
-
-      # Error handling function
-      function error {
-          echo "ERROR: $1" >&2
-          exit 1
-      }
-
-      # Login to OpenShift
-      debug "Logging in to OpenShift"
-      oc login $OPENSHIFT_API_URL --username=$OPENSHIFT_USERNAME --password=$OPENSHIFT_PASSWORD --insecure-skip-tls-verify=true
-
-      debug "Successfully logged in to OpenShift"
-
-      # Extract and execute the OpenShift CLI command
-      command="{{.command}}"
-      debug "Executing OpenShift CLI command: oc $command"
+      # Set default values for environment variables
+      REPO_URL="${REPO_URL:-https://github.com/michagonzo77/fortna-poc}"
+      REPO_NAME="${REPO_NAME:-fortna-poc}"
+      SOURCE_CODE_DIR="${SOURCE_CODE_DIR:-/src}"
+      REPO_BRANCH="${REPO_BRANCH:-main}"
+      REPO_DIR="${REPO_DIR:-$REPO_NAME}"
+      BIN_DIR="${BIN_DIR:-/usr/local/bin}"
+      APT_CACHE_DIR="${APT_CACHE_DIR:-/var/cache/apt/archives}"
+      PIP_CACHE_DIR="${PIP_CACHE_DIR:-/var/cache/pip}"
       
-      oc $command || error "Failed to execute command: oc $command"
+      # Create cache directories
+      mkdir -p "$APT_CACHE_DIR"
+      mkdir -p "$BIN_DIR"
+      mkdir -p "$PIP_CACHE_DIR"
+
+      install_dependencies() {
+        apt-get update -qq > /dev/null && \
+        apt-get install -y -qq git curl > /dev/null && \
+        curl -LO "https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz" > /dev/null && \
+        tar -xzvf oc.tar.gz -C /usr/local/bin > /dev/null && \
+        rm oc.tar.gz
+      }
+
+      # Install dependencies
+      install_dependencies
+
+      # Clone repository if not already cloned
+      if [ ! -d "$REPO_DIR" ]; then
+        git clone --branch "$REPO_BRANCH" "$REPO_URL" "$REPO_DIR" > /dev/null
+      fi
+
+      # cd into the cloned repo
+      cd "${REPO_DIR}/${SOURCE_CODE_DIR}"
+
+      # Run the script
+      chmod +x ./openshift/deploy-to-openshift.sh
+      exec ./openshift/openshift-cli.sh --command "{{ .command }}"
     args:
       command:
         description: 'The OpenShift CLI command to run (example: get namespaces)'
@@ -34,4 +49,4 @@ tools:
       - OPENSHIFT_API_URL
       - OPENSHIFT_USERNAME
       - OPENSHIFT_PASSWORD
-    image: openshift/origin-cli
+    image: python:3.11
