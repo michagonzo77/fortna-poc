@@ -1,7 +1,6 @@
 # This file contains the tool definitions for the approval calling logic
 tools:
   - name: deploy-new-environment
-    image: python:3.11
     description: Deploys new environment (prod, dev, etc.) on OpenShift for team/project.
     alias: deploy-new-environment
     content: |
@@ -52,3 +51,4 @@ tools:
       - OPENSHIFT_API_URL # OpenShift API URL
       - OPENSHIFT_USERNAME # OpenShift username
       - OPENSHIFT_PASSWORD # OpenShift password
+    image: openshift/origin-cli
