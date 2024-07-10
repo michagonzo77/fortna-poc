@@ -1,15 +1,14 @@
+# This file contains the tool definitions for the approval calling logic
 tools:
-  - name: deploy_helm_chart
+  - name: deploy-new-environment
     image: python:3.11
-    description: "Deploy a Helm chart to an OpenShift namespace based on user inputs."
-    alias: deploy-helm-chart
+    description: Deploys new environment (prod, dev, etc.) on OpenShift for team/project.
+    alias: deploy-new-environment
     content: |
-      #!/bin/bash
-
       # Set default values for environment variables
       REPO_URL="${REPO_URL:-https://github.com/michagonzo77/fortna-poc}"
       REPO_NAME="${REPO_NAME:-fortna-poc}"
-      SOURCE_CODE_DIR="${SOURCE_CODE_DIR:-src}"
+      SOURCE_CODE_DIR="${SOURCE_CODE_DIR:-/src}"
       REPO_BRANCH="${REPO_BRANCH:-main}"
       REPO_DIR="${REPO_DIR:-$REPO_NAME}"
       BIN_DIR="${BIN_DIR:-/usr/local/bin}"
@@ -21,25 +20,8 @@ tools:
       mkdir -p "$BIN_DIR"
       mkdir -p "$PIP_CACHE_DIR"
 
-      # Debugging function
-      function debug {
-          echo "DEBUG: $1"
-      }
-
-      # Error handling function
-      function error {
-          echo "ERROR: $1" >&2
-          exit 1
-      }
-
-      # Function to install Helm if not cached
-      install_helm() {
-        debug "Installing Helm"
-        curl -fsSL https://get.helm.sh/helm-v3.7.2-linux-amd64.tar.gz -o /tmp/helm.tar.gz && tar -zxvf /tmp/helm.tar.gz -C /tmp && mv /tmp/linux-amd64/helm /usr/local/bin/helm && chmod +x /usr/local/bin/helm
-        if [ $? -ne 0 ]; then
-            error "Failed to install Helm"
-        fi
-        debug "Helm installed successfully"
+      install_git() {
+        apt-get update -qq > /dev/null && apt-get install -y -qq git > /dev/null
       }
 
       # Function to install pip dependencies if not cached
@@ -48,13 +30,8 @@ tools:
         pip install -r requirements.txt --cache-dir "$PIP_CACHE_DIR" --quiet > /dev/null
       }
 
-      # Install Helm
-      install_helm
-
-      # Login to OpenShift
-      debug "Logging in to OpenShift"
-      oc login $OPENSHIFT_API_URL --username=$OPENSHIFT_USERNAME --password=$OPENSHIFT_PASSWORD --insecure-skip-tls-verify=true || error "Failed to log in to OpenShift"
-      debug "Successfully logged in to OpenShift"
+      # Install git
+      install_git
 
       # Clone repository if not already cloned
       if [ ! -d "$REPO_DIR" ]; then
@@ -67,43 +44,9 @@ tools:
       # Install pip dependencies
       install_pip_dependencies
 
-      # Extract arguments
-      environment="{{.environment}}"
-      project="{{.project}}"
-      namespace="${project}-${environment}"
-      helm_chart_url="{{.helm_chart_url}}"
-      helm_release_name="${project}-${environment}-release"
-
-      # Default Helm chart URL if not provided
-      if [ -z "$helm_chart_url" ]; then
-          helm_chart_url="https://charts.bitnami.com/bitnami/nginx-9.3.0.tgz"
-      fi
-
-      # Check if namespace exists
-      debug "Checking if namespace $namespace exists"
-      if oc get namespace $namespace > /dev/null 2>&1; then
-          debug "Namespace $namespace already exists"
-      else
-          debug "Namespace $namespace does not exist. Creating namespace."
-          oc create namespace $namespace || error "Failed to create namespace $namespace"
-      fi
-
-      # Switch to the namespace
-      debug "Switching to namespace $namespace"
-      oc project $namespace || error "Failed to switch to namespace $namespace"
-      debug "Namespace $namespace selected"
-
-      # Deploy the Helm chart
-      debug "Deploying Helm chart from $helm_chart_url to namespace $namespace"
-      helm install $helm_release_name $helm_chart_url -n $namespace || error "Failed to deploy Helm chart to namespace $namespace"
-
-      # Verify the deployment
-      debug "Verifying the deployment in namespace $namespace"
-      if oc get deploy -n $namespace > /dev/null 2>&1; then
-          debug "Deployment in namespace $namespace verified successfully"
-      else
-          error "Failed to verify deployment in namespace $namespace"
-      fi
+      # Run the script
+      export PYTHONPATH="${PYTHONPATH}:/${REPO_DIR}/${SOURCE_CODE_DIR}"
+      exec python approval/destroy_resources.py --request_id "{{ .request_id }}"
     args:
       - name: environment
         description: 'The environment to deploy to (e.g., dev, prod)'
