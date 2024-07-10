@@ -11,31 +11,19 @@ function error {
 }
 
 # Parse command-line arguments
-while getopts ":e:p:u:" opt; do
-    case ${opt} in
-        e )
-            environment=$OPTARG
-            ;;
-        p )
-            project=$OPTARG
-            ;;
-        u )
-            helm_chart_url=$OPTARG
-            ;;
-        \? )
-            echo "Invalid option: $OPTARG" 1>&2
-            exit 1
-            ;;
-        : )
-            echo "Invalid option: $OPTARG requires an argument" 1>&2
-            exit 1
-            ;;
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --environment) environment="$2"; shift ;;
+        --project) project="$2"; shift ;;
+        --helm_chart_url) helm_chart_url="$2"; shift ;;
+        *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
+    shift
 done
 
 # Check for required arguments
 if [ -z "${environment}" ] || [ -z "${project}" ]; then
-    echo "Usage: $0 -e <environment> -p <project> [-u <helm_chart_url>]"
+    echo "Usage: $0 --environment <environment> --project <project> [--helm_chart_url <helm_chart_url>]"
     exit 1
 fi
 
@@ -58,6 +46,7 @@ debug "Helm installed successfully"
 # Login to OpenShift
 debug "Logging in to OpenShift"
 oc login $OPENSHIFT_API_URL --username=$OPENSHIFT_USERNAME --password=$OPENSHIFT_PASSWORD --insecure-skip-tls-verify=true || error "Failed to log in to OpenShift"
+
 debug "Successfully logged in to OpenShift"
 
 # Check if namespace exists
