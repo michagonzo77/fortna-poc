@@ -1,3 +1,4 @@
+#!/bin/bash
 # Debugging function
 function debug {
     echo "DEBUG: $1"
