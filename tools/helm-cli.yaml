@@ -1,8 +1,8 @@
 tools:
-  - name: openshift
+  - name: helm
     image: python:3.11
-    description: "Run OpenShift CLI commands with auto-login (example: list all namespaces)"
-    alias: openshift
+    description: "Run Helm CLI commands"
+    alias: helm
     content: |
       # Set default values for environment variables
       REPO_URL="${REPO_URL:-https://github.com/michagonzo77/fortna-poc}"
@@ -43,11 +43,11 @@ tools:
       cd "${REPO_DIR}/${SOURCE_CODE_DIR}"
 
       # Run the script
-      chmod +x ./openshift/openshift-cli.sh
-      exec ./openshift/openshift-cli.sh --command "{{ .command }}"
+      chmod +x ./helm/helm-cli.sh
+      exec ./helm/helm-cli.sh --command "{{ .command }}"
     args:
       - name: command
-        description: 'The OpenShift CLI command to run (example: get namespaces)'
+        description: 'The Helm CLI command to run (example: list releases)'
         required: true
     env:
       - OPENSHIFT_API_URL
