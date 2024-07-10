@@ -1,9 +1,26 @@
 tools:
-  - name: deploy_to_openshift
-    alias: deploy_oc
-    description: "Setup an environment (dev, prod, etc.) for a project in OpenShift. This tool logs into OpenShift, checks if the namespace exists, creates it if necessary, deploys a Helm chart, and verifies the deployment."
-    type: bash
+  - name: deploy_helm_chart
+    image: python:3.11
+    description: "Deploy a Helm chart to an OpenShift namespace based on user inputs."
+    alias: deploy-helm-chart
     content: |
+      #!/bin/bash
+
+      # Set default values for environment variables
+      REPO_URL="${REPO_URL:-https://github.com/michagonzo77/fortna-poc}"
+      REPO_NAME="${REPO_NAME:-fortna-poc}"
+      SOURCE_CODE_DIR="${SOURCE_CODE_DIR:-src}"
+      REPO_BRANCH="${REPO_BRANCH:-main}"
+      REPO_DIR="${REPO_DIR:-$REPO_NAME}"
+      BIN_DIR="${BIN_DIR:-/usr/local/bin}"
+      APT_CACHE_DIR="${APT_CACHE_DIR:-/var/cache/apt/archives}"
+      PIP_CACHE_DIR="${PIP_CACHE_DIR:-/var/cache/pip}"
+      
+      # Create cache directories
+      mkdir -p "$APT_CACHE_DIR"
+      mkdir -p "$BIN_DIR"
+      mkdir -p "$PIP_CACHE_DIR"
+
       # Debugging function
       function debug {
           echo "DEBUG: $1"
@@ -15,19 +32,40 @@ tools:
           exit 1
       }
 
+      # Function to install Helm if not cached
+      install_helm() {
+        debug "Installing Helm"
+        curl -fsSL https://get.helm.sh/helm-v3.7.2-linux-amd64.tar.gz -o /tmp/helm.tar.gz && tar -zxvf /tmp/helm.tar.gz -C /tmp && mv /tmp/linux-amd64/helm /usr/local/bin/helm && chmod +x /usr/local/bin/helm
+        if [ $? -ne 0 ]; then
+            error "Failed to install Helm"
+        fi
+        debug "Helm installed successfully"
+      }
+
+      # Function to install pip dependencies if not cached
+      install_pip_dependencies() {
+        export PIP_CACHE_DIR="$PIP_CACHE_DIR"
+        pip install -r requirements.txt --cache-dir "$PIP_CACHE_DIR" --quiet > /dev/null
+      }
+
       # Install Helm
-      debug "Installing Helm"
-      curl -fsSL https://get.helm.sh/helm-v3.7.2-linux-amd64.tar.gz -o /tmp/helm.tar.gz && tar -zxvf /tmp/helm.tar.gz -C /tmp && mv /tmp/linux-amd64/helm /usr/local/bin/helm && chmod +x /usr/local/bin/helm
-      if [ $? -ne 0 ]; then
-          error "Failed to install Helm"
-      fi
-      debug "Helm installed successfully"
+      install_helm
 
       # Login to OpenShift
       debug "Logging in to OpenShift"
       oc login $OPENSHIFT_API_URL --username=$OPENSHIFT_USERNAME --password=$OPENSHIFT_PASSWORD --insecure-skip-tls-verify=true || error "Failed to log in to OpenShift"
-
       debug "Successfully logged in to OpenShift"
+
+      # Clone repository if not already cloned
+      if [ ! -d "$REPO_DIR" ]; then
+        git clone --branch "$REPO_BRANCH" "$REPO_URL" "$REPO_DIR" > /dev/null
+      fi
+
+      # cd into the cloned repo
+      cd "${REPO_DIR}/${SOURCE_CODE_DIR}"
+
+      # Install pip dependencies
+      install_pip_dependencies
 
       # Extract arguments
       environment="{{.environment}}"
@@ -67,17 +105,16 @@ tools:
           error "Failed to verify deployment in namespace $namespace"
       fi
     args:
-      environment:
-        description: 'The environment to deploy to (example: dev, prod)'
+      - name: environment
+        description: 'The environment to deploy to (e.g., dev, prod)'
         required: true
-      project:
-        description: 'The project or team name (example: walmart)'
+      - name: project
+        description: 'The project name'
         required: true
-      helm_chart_url:
+      - name: helm_chart_url
         description: 'The URL of the Helm chart to deploy'
         required: false
     env:
-      - OPENSHIFT_API_URL
-      - OPENSHIFT_USERNAME
-      - OPENSHIFT_PASSWORD
-    image: openshift/origin-cli
+      - OPENSHIFT_API_URL # OpenShift API URL
+      - OPENSHIFT_USERNAME # OpenShift username
+      - OPENSHIFT_PASSWORD # OpenShift password
