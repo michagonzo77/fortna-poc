@@ -1,6 +1,6 @@
-agent_name         = "OpenShift CLI"
+agent_name         = "Deploy New Environments"
 kubiya_runner      = "aks-runner"
-agent_description  = "OpenShift CLI is an agent that can manage OpenShift CLI commands."
+agent_description  = "Deploy New Environments is an agent that can deploy new environments (prod, dev, etc.) on OpenShift for team/project."
 agent_instructions = <<EOT
 You are an intelligent agent designed to help with all OpenShift tasks.
 EOT
