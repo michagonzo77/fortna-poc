@@ -10,6 +10,43 @@ function error {
     exit 1
 }
 
+# Parse command-line arguments
+while getopts ":e:p:u:" opt; do
+    case ${opt} in
+        e )
+            environment=$OPTARG
+            ;;
+        p )
+            project=$OPTARG
+            ;;
+        u )
+            helm_chart_url=$OPTARG
+            ;;
+        \? )
+            echo "Invalid option: $OPTARG" 1>&2
+            exit 1
+            ;;
+        : )
+            echo "Invalid option: $OPTARG requires an argument" 1>&2
+            exit 1
+            ;;
+    esac
+done
+
+# Check for required arguments
+if [ -z "${environment}" ] || [ -z "${project}" ]; then
+    echo "Usage: $0 -e <environment> -p <project> [-u <helm_chart_url>]"
+    exit 1
+fi
+
+namespace="${project}-${environment}"
+helm_release_name="${project}-${environment}-release"
+
+# Default Helm chart URL if not provided
+if [ -z "$helm_chart_url" ]; then
+    helm_chart_url="https://charts.bitnami.com/bitnami/nginx-9.3.0.tgz"
+fi
+
 # Install Helm
 debug "Installing Helm"
 curl -fsSL https://get.helm.sh/helm-v3.7.2-linux-amd64.tar.gz -o /tmp/helm.tar.gz && tar -zxvf /tmp/helm.tar.gz -C /tmp && mv /tmp/linux-amd64/helm /usr/local/bin/helm && chmod +x /usr/local/bin/helm
@@ -21,20 +58,7 @@ debug "Helm installed successfully"
 # Login to OpenShift
 debug "Logging in to OpenShift"
 oc login $OPENSHIFT_API_URL --username=$OPENSHIFT_USERNAME --password=$OPENSHIFT_PASSWORD --insecure-skip-tls-verify=true || error "Failed to log in to OpenShift"
-
 debug "Successfully logged in to OpenShift"
-
-# Extract arguments
-environment="{{.environment}}"
-project="{{.project}}"
-namespace="${project}-${environment}"
-helm_chart_url="{{.helm_chart_url}}"
-helm_release_name="${project}-${environment}-release"
-
-# Default Helm chart URL if not provided
-if [ -z "$helm_chart_url" ]; then
-    helm_chart_url="https://charts.bitnami.com/bitnami/nginx-9.3.0.tgz"
-fi
 
 # Check if namespace exists
 debug "Checking if namespace $namespace exists"
