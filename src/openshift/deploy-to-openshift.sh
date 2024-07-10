@@ -33,14 +33,6 @@ helm_release_name="${project}-${environment}-release"
 
 helm_chart_url="https://charts.bitnami.com/bitnami/nginx-9.3.0.tgz"
 
-# Install Helm
-debug "Installing Helm"
-curl -fsSL https://get.helm.sh/helm-v3.7.2-linux-amd64.tar.gz -o /tmp/helm.tar.gz && tar -zxvf /tmp/helm.tar.gz -C /tmp && mv /tmp/linux-amd64/helm /usr/local/bin/helm && chmod +x /usr/local/bin/helm
-if [ $? -ne 0 ]; then
-    error "Failed to install Helm"
-fi
-debug "Helm installed successfully"
-
 # Login to OpenShift
 debug "Logging in to OpenShift"
 oc login $OPENSHIFT_API_URL --username=$OPENSHIFT_USERNAME --password=$OPENSHIFT_PASSWORD --insecure-skip-tls-verify=true >/dev/null 2>&1
