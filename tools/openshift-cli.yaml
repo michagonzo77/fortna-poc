@@ -1,8 +1,8 @@
 tools:
-  - name: openshift_cli
+  - name: openshift
     image: python:3.11
+    description: "Run OpenShift CLI commands with auto-login (example: list all namespaces)"
     alias: openshift
-    description: Run OpenShift CLI commands with auto-login
     content: |
       # Set default values for environment variables
       REPO_URL="${REPO_URL:-https://github.com/michagonzo77/fortna-poc}"
@@ -39,7 +39,7 @@ tools:
       cd "${REPO_DIR}/${SOURCE_CODE_DIR}"
 
       # Run the script
-      chmod +x ./openshift/deploy-to-openshift.sh
+      chmod +x ./openshift/openshift-cli.sh
       exec ./openshift/openshift-cli.sh --command "{{ .command }}"
     args:
       command:
