@@ -1,5 +1,6 @@
 tools:
   - name: deploy-new-environment
+    image: python:3.11
     description: Deploys new environment (prod, dev, etc.) on OpenShift for team/project.
     alias: deploy-new-environment
     content: |
@@ -18,12 +19,16 @@ tools:
       mkdir -p "$BIN_DIR"
       mkdir -p "$PIP_CACHE_DIR"
 
-      install_git() {
-        apk update > /dev/null && apk add --no-cache git > /dev/null
+      install_dependencies() {
+        apk update > /dev/null && \
+        apk add --no-cache git curl > /dev/null && \
+        curl -LO "https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz" > /dev/null && \
+        tar -xzvf oc.tar.gz -C /usr/local/bin > /dev/null && \
+        rm oc.tar.gz
       }
 
-      # Install git
-      install_git
+      # Install dependencies
+      install_dependencies
 
       # Clone repository if not already cloned
       if [ ! -d "$REPO_DIR" ]; then
@@ -50,4 +55,3 @@ tools:
       - OPENSHIFT_API_URL # OpenShift API URL
       - OPENSHIFT_USERNAME # OpenShift username
       - OPENSHIFT_PASSWORD # OpenShift password
-    image: openshift/origin-cli
