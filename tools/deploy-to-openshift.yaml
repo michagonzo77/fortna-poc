@@ -36,7 +36,7 @@ tools:
       cd "${REPO_DIR}/${SOURCE_CODE_DIR}"
 
       # Run the script
-      exec ./deploy-to-openshift.sh --environment "{{ .environment }}" --project "{{ .project }}" --helm_chart_url "{{ .helm_chart_url }}"
+      exec ./openshift/deploy-to-openshift.sh --environment "{{ .environment }}" --project "{{ .project }}" --helm_chart_url "{{ .helm_chart_url }}"
     args:
       - name: environment
         description: 'The environment to deploy to (e.g., dev, prod)'
