@@ -13,10 +13,8 @@ users              = []
 groups             = ["Admin"]
 agent_tool_sources = ["https://github.com/michagonzo77/fortna-poc"]
 links              = []
-environment_variables = {}
-
-// Decide whether to enable debug mode
-// Debug mode will enable additional logging, and will allow visibility on Slack (if configured) as part of the conversation
-// Very useful for debugging and troubleshooting
-// DO NOT USE IN PRODUCTION
-debug = true
+environment_variables = {
+    LOG_LEVEL = "INFO"
+    KUBIYA_TOOL_TIMEOUT = "5m"
+    KUBIYA_DEBUG = "1"   
+}
