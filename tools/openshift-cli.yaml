@@ -1,8 +1,8 @@
 tools:
   - name: openshift_cli
+    image: python:3.11
     alias: openshift
     description: Run OpenShift CLI commands with auto-login
-    type: bash
     content: |
       # Set default values for environment variables
       REPO_URL="${REPO_URL:-https://github.com/michagonzo77/fortna-poc}"
@@ -49,4 +49,3 @@ tools:
       - OPENSHIFT_API_URL
       - OPENSHIFT_USERNAME
       - OPENSHIFT_PASSWORD
-    image: python:3.11
