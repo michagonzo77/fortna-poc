@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Debugging function
 function debug {
     echo "DEBUG: $1"
@@ -45,8 +46,10 @@ debug "Helm installed successfully"
 
 # Login to OpenShift
 debug "Logging in to OpenShift"
-oc login $OPENSHIFT_API_URL --username=$OPENSHIFT_USERNAME --password=$OPENSHIFT_PASSWORD --insecure-skip-tls-verify=true || error "Failed to log in to OpenShift"
-
+oc login $OPENSHIFT_API_URL --username=$OPENSHIFT_USERNAME --password=$OPENSHIFT_PASSWORD --insecure-skip-tls-verify=true >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+    error "Failed to log in to OpenShift"
+fi
 debug "Successfully logged in to OpenShift"
 
 # Check if namespace exists
@@ -55,17 +58,27 @@ if oc get namespace $namespace > /dev/null 2>&1; then
     debug "Namespace $namespace already exists"
 else
     debug "Namespace $namespace does not exist. Creating namespace."
-    oc create namespace $namespace || error "Failed to create namespace $namespace"
+    oc create namespace $namespace
+    if [ $? -ne 0 ]; then
+        error "Failed to create namespace $namespace"
+    fi
+    debug "Namespace $namespace created successfully"
 fi
 
 # Switch to the namespace
 debug "Switching to namespace $namespace"
-oc project $namespace || error "Failed to switch to namespace $namespace"
+oc project $namespace >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+    error "Failed to switch to namespace $namespace"
+fi
 debug "Namespace $namespace selected"
 
 # Deploy the Helm chart
 debug "Deploying Helm chart from $helm_chart_url to namespace $namespace"
-helm install $helm_release_name $helm_chart_url -n $namespace || error "Failed to deploy Helm chart to namespace $namespace"
+helm install $helm_release_name $helm_chart_url -n $namespace
+if [ $? -ne 0 ]; then
+    error "Failed to deploy Helm chart to namespace $namespace"
+fi
 
 # Verify the deployment
 debug "Verifying the deployment in namespace $namespace"
