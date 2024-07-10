@@ -42,7 +42,7 @@ tools:
       chmod +x ./openshift/openshift-cli.sh
       exec ./openshift/openshift-cli.sh --command "{{ .command }}"
     args:
-      command:
+      - name: command
         description: 'The OpenShift CLI command to run (example: get namespaces)'
         required: true
     env:
