@@ -1,0 +1,62 @@
+# Debugging function
+function debug {
+    echo "DEBUG: $1"
+}
+
+# Error handling function
+function error {
+    echo "ERROR: $1" >&2
+    exit 1
+}
+
+# Install Helm
+debug "Installing Helm"
+curl -fsSL https://get.helm.sh/helm-v3.7.2-linux-amd64.tar.gz -o /tmp/helm.tar.gz && tar -zxvf /tmp/helm.tar.gz -C /tmp && mv /tmp/linux-amd64/helm /usr/local/bin/helm && chmod +x /usr/local/bin/helm
+if [ $? -ne 0 ]; then
+    error "Failed to install Helm"
+fi
+debug "Helm installed successfully"
+
+# Login to OpenShift
+debug "Logging in to OpenShift"
+oc login $OPENSHIFT_API_URL --username=$OPENSHIFT_USERNAME --password=$OPENSHIFT_PASSWORD --insecure-skip-tls-verify=true || error "Failed to log in to OpenShift"
+
+debug "Successfully logged in to OpenShift"
+
+# Extract arguments
+environment="{{.environment}}"
+project="{{.project}}"
+namespace="${project}-${environment}"
+helm_chart_url="{{.helm_chart_url}}"
+helm_release_name="${project}-${environment}-release"
+
+# Default Helm chart URL if not provided
+if [ -z "$helm_chart_url" ]; then
+    helm_chart_url="https://charts.bitnami.com/bitnami/nginx-9.3.0.tgz"
+fi
+
+# Check if namespace exists
+debug "Checking if namespace $namespace exists"
+if oc get namespace $namespace > /dev/null 2>&1; then
+    debug "Namespace $namespace already exists"
+else
+    debug "Namespace $namespace does not exist. Creating namespace."
+    oc create namespace $namespace || error "Failed to create namespace $namespace"
+fi
+
+# Switch to the namespace
+debug "Switching to namespace $namespace"
+oc project $namespace || error "Failed to switch to namespace $namespace"
+debug "Namespace $namespace selected"
+
+# Deploy the Helm chart
+debug "Deploying Helm chart from $helm_chart_url to namespace $namespace"
+helm install $helm_release_name $helm_chart_url -n $namespace || error "Failed to deploy Helm chart to namespace $namespace"
+
+# Verify the deployment
+debug "Verifying the deployment in namespace $namespace"
+if oc get deploy -n $namespace > /dev/null 2>&1; then
+    debug "Deployment in namespace $namespace verified successfully"
+else
+    error "Failed to verify deployment in namespace $namespace"
+fi

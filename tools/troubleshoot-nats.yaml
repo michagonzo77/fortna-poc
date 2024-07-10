@@ -1,0 +1,100 @@
+tools:
+  - name: troubleshoot_nats
+    alias: troubleshoot_oc
+    description: "Troubleshoot nats by selecting environment and team/project, searching logs for error details, and verifying NATS cluster RTT and logs."
+    type: bash
+    content: |
+      # Debugging function
+      function debug {
+          echo "DEBUG: $1"
+      }
+
+      # Error handling function
+      function error {
+          echo "ERROR: $1" >&2
+          exit 1
+      }
+      
+      # Install NATS
+      debug "Installing NATS CLI"
+      curl -fsSL https://github.com/nats-io/natscli/releases/download/v0.0.29/nats-0.0.29-linux-amd64.tar.gz -o /tmp/nats.tar.gz && tar -zxvf /tmp/nats.tar.gz -C /tmp && mv /tmp/nats /usr/local/bin/nats && chmod +x /usr/local/bin/nats
+      if [ $? -ne 0 ]; then
+          error "Failed to install NATS CLI"
+      fi
+      debug "NATS CLI installed successfully"
+
+      # Login to OpenShift
+      debug "Logging in to OpenShift"
+      oc login $OPENSHIFT_API_URL --username=$OPENSHIFT_USERNAME --password=$OPENSHIFT_PASSWORD --insecure-skip-tls-verify=true || error "Failed to log in to OpenShift"
+      debug "Successfully logged in to OpenShift"
+
+      # Extract arguments
+      environment="{{.environment}}"
+      project="{{.project}}"
+      namespace="${project}-${environment}"
+      pod_name="{{.pod_name}}"
+      error_pattern="{{.error_pattern}}"
+      nats_context="{{.nats_context}}"
+
+      # Select namespace
+      debug "Selecting namespace $namespace"
+      oc project $namespace || error "Failed to select namespace $namespace"
+      debug "Namespace $namespace selected"
+
+      # Verify the pod exists
+      debug "Verifying the pod $pod_name exists in namespace $namespace"
+      if ! oc get pods -n $namespace | grep $pod_name; then
+          error "Pod $pod_name does not exist in namespace $namespace"
+      fi
+
+      # Fetch logs and search for errors
+      debug "Fetching logs for pod $pod_name and searching for errors"
+      oc logs $pod_name -n $namespace > /tmp/pod_logs.log || error "Failed to fetch logs for pod $pod_name"
+      grep "$error_pattern" /tmp/pod_logs.log > /tmp/error_logs.log
+      if [ $? -ne 0 ]; then
+          error "No errors matching pattern $error_pattern found in logs"
+      fi
+      debug "Errors found and logged in /tmp/error_logs.log"
+
+      # Prompt developer to select/confirm options
+      debug "Prompting developer to select/confirm options"
+      # (Simulating developer selection for now)
+      developer_selection="nats_context"
+      debug "Developer selected: $developer_selection"
+
+      if [ "$developer_selection" == "nats_context" ]; then
+          # Verify NATS cluster RTT and logs
+          debug "Verifying NATS cluster RTT and logs"
+          nats context ls | grep $nats_context || error "NATS context $nats_context not found"
+          nats rtt --context $nats_context || error "Failed to verify NATS RTT for context $nats_context"
+          debug "NATS RTT verified for context $nats_context"
+
+          # Check NATS logs if RTT verification fails
+          if [ $? -ne 0 ]; then
+              oc project $namespace || error "Failed to switch to namespace $namespace"
+              oc logs $pod_name | grep ERR || error "No errors found in NATS logs for pod $pod_name"
+          fi
+      fi
+
+      debug "Troubleshooting completed"
+    args:
+      environment:
+        description: 'The environment to deploy to (example: dev, prod)'
+        required: true
+      project:
+        description: 'The project or team name (example: kubiya)'
+        required: true
+      pod_name:
+        description: 'The name of the pod to troubleshoot'
+        required: true
+      error_pattern:
+        description: 'The error pattern to search for in the pod logs'
+        required: true
+      nats_context:
+        description: 'The NATS context to verify'
+        required: false
+    env:
+      - OPENSHIFT_API_URL
+      - OPENSHIFT_USERNAME
+      - OPENSHIFT_PASSWORD
+    image: openshift/origin-cli
