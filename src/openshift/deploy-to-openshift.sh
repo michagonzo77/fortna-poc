@@ -51,6 +51,7 @@ debug "Successfully logged in to OpenShift"
 
 # Check if namespace exists
 debug "Checking if namespace $namespace exists"
+oc get namespaces
 oc get namespace $namespace > /dev/null 2>&1
 namespace_check_status=$?
 debug "Namespace check status: $namespace_check_status"
