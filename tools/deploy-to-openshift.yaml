@@ -24,12 +24,6 @@ tools:
         apt-get update -qq > /dev/null && apt-get install -y -qq git > /dev/null
       }
 
-      # Function to install pip dependencies if not cached
-      install_pip_dependencies() {
-        export PIP_CACHE_DIR="$PIP_CACHE_DIR"
-        pip install -r requirements.txt --cache-dir "$PIP_CACHE_DIR" --quiet > /dev/null
-      }
-
       # Install git
       install_git
 
@@ -40,9 +34,6 @@ tools:
 
       # cd into the cloned repo
       cd "${REPO_DIR}/${SOURCE_CODE_DIR}"
-
-      # Install pip dependencies
-      install_pip_dependencies
 
       # Run the script
       export PYTHONPATH="${PYTHONPATH}:/${REPO_DIR}/${SOURCE_CODE_DIR}"
