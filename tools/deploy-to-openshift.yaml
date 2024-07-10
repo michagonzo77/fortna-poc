@@ -46,7 +46,7 @@ tools:
         description: 'The environment to deploy to (e.g., dev, prod)'
         required: true
       - name: project
-        description: 'The project name'
+        description: 'The project name (must be provided by user)'
         required: true
     env:
       - OPENSHIFT_API_URL # OpenShift API URL
