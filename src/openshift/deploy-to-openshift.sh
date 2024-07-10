@@ -16,7 +16,7 @@ while [[ "$#" -gt 0 ]]; do
     case $1 in
         --environment) environment="$2"; shift ;;
         --project) project="$2"; shift ;;
-        --helm_chart_url) helm_chart_url="$2"; shift ;;
+        # --helm_chart_url) helm_chart_url="$2"; shift ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
@@ -24,17 +24,14 @@ done
 
 # Check for required arguments
 if [ -z "${environment}" ] || [ -z "${project}" ]; then
-    echo "Usage: $0 --environment <environment> --project <project> [--helm_chart_url <helm_chart_url>]"
+    echo "Usage: $0 --environment <environment> --project <project>"
     exit 1
 fi
 
 namespace="${project}-${environment}"
 helm_release_name="${project}-${environment}-release"
 
-# Default Helm chart URL if not provided
-if [ -z "$helm_chart_url" ]; then
-    helm_chart_url="https://charts.bitnami.com/bitnami/nginx-9.3.0.tgz"
-fi
+helm_chart_url="https://charts.bitnami.com/bitnami/nginx-9.3.0.tgz"
 
 # Install Helm
 debug "Installing Helm"
