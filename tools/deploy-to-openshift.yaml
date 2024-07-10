@@ -1,4 +1,3 @@
-# This file contains the tool definitions for the approval calling logic
 tools:
   - name: deploy-new-environment
     description: Deploys new environment (prod, dev, etc.) on OpenShift for team/project.
@@ -11,16 +10,16 @@ tools:
       REPO_BRANCH="${REPO_BRANCH:-main}"
       REPO_DIR="${REPO_DIR:-$REPO_NAME}"
       BIN_DIR="${BIN_DIR:-/usr/local/bin}"
-      APT_CACHE_DIR="${APT_CACHE_DIR:-/var/cache/apt/archives}"
+      APK_CACHE_DIR="${APK_CACHE_DIR:-/var/cache/apk}"
       PIP_CACHE_DIR="${PIP_CACHE_DIR:-/var/cache/pip}"
       
       # Create cache directories
-      mkdir -p "$APT_CACHE_DIR"
+      mkdir -p "$APK_CACHE_DIR"
       mkdir -p "$BIN_DIR"
       mkdir -p "$PIP_CACHE_DIR"
 
       install_git() {
-        apt-get update -qq > /dev/null && apt-get install -y -qq git > /dev/null
+        apk update > /dev/null && apk add --no-cache git > /dev/null
       }
 
       # Install git
