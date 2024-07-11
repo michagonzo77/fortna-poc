@@ -28,6 +28,10 @@ if [ -z "${environment}" ] || [ -z "${project}" ]; then
     exit 1
 fi
 
+# Convert project and environment to lowercase
+environment=$(echo "$environment" | tr '[:upper:]' '[:lower:]')
+project=$(echo "$project" | tr '[:upper:]' '[:lower:]')
+
 namespace="${project}-${environment}"
 helm_release_name="${project}-${environment}-release"
 
